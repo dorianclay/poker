@@ -3,6 +3,8 @@ package cardgame
 import (
 	"math/rand"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CardSuit int
@@ -67,45 +69,74 @@ func (c Card) SuitToString() string {
 	}
 }
 
-type Deck struct {
-	Cards [52]Card
+func popCard(cards []Card) (Card, []Card) {
+	popped := cards[len(cards)-1]
+	cards = cards[:len(cards)-1]
+	return popped, cards
 }
 
-func (d Deck) Init() Deck {
-	var count = 0
-	var i = 1
+func pushCard(cards []Card, card Card) []Card {
+	cards = append(cards, card)
+	return cards
+}
 
-	for ; i < 14; i++ {
-		d.Cards[count] = Card{Value: i, Suit: Clubs}
-		count += 1
+type Deck struct {
+	Cards []Card
+	Drawn []Card
+}
+
+func (d *Deck) Init() {
+	for i := 1; i < 14; i++ {
+		d.Cards = append(d.Cards, Card{Value: i, Suit: Spades})
 	}
 
-	i = 1
-	for ; i < 14; i++ {
-		d.Cards[count] = Card{Value: i, Suit: Diamonds}
-		count += 1
+	for i := 1; i < 14; i++ {
+		d.Cards = append(d.Cards, Card{Value: i, Suit: Clubs})
 	}
 
-	i = 1
-	for ; i < 14; i++ {
-		d.Cards[count] = Card{Value: i, Suit: Hearts}
-		count += 1
+	for i := 1; i < 14; i++ {
+		d.Cards = append(d.Cards, Card{Value: i, Suit: Hearts})
 	}
 
-	i = 1
-	for ; i < 14; i++ {
-		d.Cards[count] = Card{Value: i, Suit: Spades}
-		count += 1
+	for i := 1; i < 14; i++ {
+		d.Cards = append(d.Cards, Card{Value: i, Suit: Diamonds})
 	}
 
 	d.Shuffle()
-
-	return d
 }
 
 func (d *Deck) Shuffle() {
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(52, func(i, j int) {
+	rand.Shuffle(len(d.Cards), func(i, j int) {
 		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
 	})
+}
+
+func (d *Deck) Reshuffle() {
+	for len(d.Drawn) > 0 {
+		var card Card
+		card, d.Drawn = popCard(d.Drawn)
+		d.Cards = pushCard(d.Cards, card)
+	}
+
+	d.Shuffle()
+}
+
+func (d *Deck) Draw() Card {
+	var card Card
+	card, d.Cards = popCard(d.Cards)
+	d.Drawn = pushCard(d.Drawn, card)
+	return card
+}
+
+type Player struct {
+	Name  string
+	Id    uuid.UUID
+	Cards [2]Card
+}
+
+func (p Player) Init(name string) Player {
+	p.Name = name
+	p.Id = uuid.New()
+	return p
 }
