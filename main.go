@@ -10,7 +10,7 @@ func main() {
 	println(card.SuitToString())
 	println(card.ValueToFace())
 
-	var deck = cardgame.Deck{}.Init().Shuffle()
+	var deck = cardgame.Deck{}.Init()
 	for card := range deck.Cards {
 		fmt.Println("count:", card, "-", deck.Cards[card].ValueToFace(), "of", deck.Cards[card].SuitToString())
 	}

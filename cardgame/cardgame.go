@@ -98,13 +98,14 @@ func (d Deck) Init() Deck {
 		count += 1
 	}
 
+	d.Shuffle()
+
 	return d
 }
 
-func (d Deck) Shuffle() Deck {
+func (d *Deck) Shuffle() {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(52, func(i, j int) {
 		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
 	})
-	return d
 }
