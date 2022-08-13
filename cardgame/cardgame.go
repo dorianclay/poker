@@ -2,6 +2,7 @@ package cardgame
 
 import (
 	"math/rand"
+	"poker/codegenerator"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,10 @@ const (
 	Hearts
 	Spades
 )
+
+/*
+ *    CARD
+ */
 
 type Card struct {
 	Value int
@@ -80,6 +85,9 @@ func pushCard(cards []Card, card Card) []Card {
 	return cards
 }
 
+/*
+ *   DECK
+ */
 type Deck struct {
 	Cards []Card
 	Drawn []Card
@@ -129,14 +137,101 @@ func (d *Deck) Draw() Card {
 	return card
 }
 
+type RoleButton int
+
+const (
+	Dealer RoleButton = iota
+	SmallBlind
+	BigBlind
+	NoRole
+)
+
+/*
+ *   PLAYER
+ */
 type Player struct {
-	Name  string
-	Id    uuid.UUID
-	Cards [2]Card
+	Name   string
+	Id     uuid.UUID
+	Cards  []Card
+	Chips  int
+	Folded bool
+	Role   RoleButton
+	Bet    int
 }
 
 func (p Player) Init(name string) Player {
 	p.Name = name
 	p.Id = uuid.New()
+	p.Cards = make([]Card, 0, 2)
+	p.Chips = 0
+	p.Folded = false
+	p.Role = NoRole
+	p.Bet = 0
 	return p
+}
+
+func (p *Player) PlaceBet(amount int) bool {
+	if amount < p.Chips {
+		p.Bet += amount
+		return true
+	}
+	return false
+}
+
+/*
+ *   GAME
+ */
+type Game struct {
+	Players  []Player
+	GameDeck Deck
+	FaceUp   []Card
+	Pot      int
+	Code     string
+	Id       uuid.UUID
+	Blind    int
+}
+
+func (g Game) Init(blind int) Game {
+	g.GameDeck.Init()
+	g.Pot = 0
+	g.FaceUp = make([]Card, 0, 5)
+	g.Code = codegenerator.Code()
+	g.Id = uuid.New()
+	g.Blind = blind
+	return g
+}
+
+func (g *Game) DealPlayersHoleCards() {
+	for i, _ := range g.Players {
+		for j := 0; j < 2; j++ {
+			g.Players[i].Cards = append(g.Players[i].Cards, g.GameDeck.Draw())
+		}
+	}
+}
+
+func (g *Game) DealTable() {
+	g.FaceUp = append(g.FaceUp, g.GameDeck.Draw())
+}
+
+func (g *Game) Flip() {
+	_ = g.GameDeck.Draw()
+	g.DealTable()
+}
+
+func (g *Game) Flop() {
+	_ = g.GameDeck.Draw()
+	for i := 0; i < 3; i++ {
+		g.DealTable()
+	}
+}
+
+func (g *Game) NewRound() {
+	g.FaceUp = g.FaceUp[:0]
+	g.GameDeck.Reshuffle()
+
+	for _, player := range g.Players {
+		player.Folded = false
+		player.Cards = player.Cards[:0]
+		player.Bet = 0
+	}
 }
